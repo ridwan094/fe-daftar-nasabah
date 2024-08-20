@@ -18,16 +18,71 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
+  background: linear-gradient(to bottom,
       transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+      rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Untuk tabel pada tampilan mobile */
+@media (max-width: 768px) {
+  .table-responsive {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .table-responsive table {
+    width: 100%;
+    border: 0;
+  }
+
+  .table-responsive th, .table-responsive td {
+    display: block;
+    width: 100%;
+    text-align: right;
+  }
+
+  .table-responsive th::before, .table-responsive td::before {
+    content: attr(data-label);
+    float: left;
+    font-weight: bold;
+  }
+
+  .table-responsive th, .table-responsive td {
+    padding-left: 50%;
+    white-space: nowrap;
+  }
+
+  .table-responsive td {
+    border: none;
+    border-bottom: 1px solid #ddd;
+    position: relative;
+    padding-left: 50%;
+  }
+
+  .table-responsive td:before {
+    position: absolute;
+    top: 12px;
+    left: 6px;
+    width: 45%;
+    padding-right: 10px;
+    white-space: nowrap;
+    text-align: left;
+    font-weight: bold;
   }
 }

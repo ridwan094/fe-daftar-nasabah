@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from '../utils/axios';
 import { toast, Toaster } from 'react-hot-toast';
+import { getToken, getRole, setUserInfo } from '../utils/auth';
 
 export default function EditNasabah() {
     const router = useRouter();
+    const { id: queryId } = router.query;
+    const [currentTime, setCurrentTime] = useState(new Date());
     const [user, setUser] = useState({
         username: '',
         email: '',
@@ -12,22 +15,66 @@ export default function EditNasabah() {
         nik: '',
         alamat: '',
         jenis_kelamin: '',
-        usia: ''
+        usia: '',
+        password: ''
     });
+    const [role, setRole] = useState('');
+    const [id, setId] = useState(queryId || localStorage.getItem('userId'));
 
     useEffect(() => {
-        const userData = {
-            userId: localStorage.getItem('userId'),
-            username: localStorage.getItem('username'),
-            email: localStorage.getItem('email'),
-            no_telp: localStorage.getItem('no_telp'),
-            nik: localStorage.getItem('nik'),
-            alamat: localStorage.getItem('alamat'),
-            jenis_kelamin: localStorage.getItem('jenis_kelamin'),
-            usia: localStorage.getItem('usia'),
+        const intervalId = setInterval(() => {
+          setCurrentTime(new Date());
+        }, 1000);
+    
+        return () => clearInterval(intervalId);
+      }, []);
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const token = getToken();
+                const storedRole = getRole();
+                setRole(storedRole);
+
+                let userId = id;
+                if (storedRole === 'Nasabah') {
+                    userId = localStorage.getItem('userId');
+                    setId(userId);
+                }
+
+                console.log('Role:', storedRole);
+                console.log('Queried ID:', queryId);
+                console.log('Stored User ID (for Nasabah):', localStorage.getItem('userId'));
+                console.log('Final ID used for fetching:', userId);
+
+                if (!userId) {
+                    console.error('User ID is undefined.');
+                    return;
+                }
+
+                let url = `http://localhost:3006/api/nasabah/${userId}`;
+
+                console.log("Fetching data for nasabah URL: ", url);
+
+                const response = await axios.get(url, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+
+                if (response.data) {
+                    setUser(response.data);
+                }
+            } catch (error) {
+                console.error('Gagal memuat data nasabah:', error);
+                toast.error('Gagal memuat data nasabah.');
+            }
         };
-        setUser(userData);
-    }, []);
+
+        if (id) {
+            fetchUserData();
+        }
+    }, [id]);
 
     const handleChange = (e) => {
         setUser({ ...user, [e.target.name]: e.target.value });
@@ -35,31 +82,45 @@ export default function EditNasabah() {
 
     const handleUpdate = async () => {
         try {
-            const userId = user.userId;
-            const response = await axios.put(`http://localhost:3002/api/nasabah/${user.userId}`, {
-                username: user.username,
-                email: user.email,
-                no_telp: user.no_telp,
-                nik: user.nik,
-                alamat: user.alamat,
-                jenis_kelamin: user.jenis_kelamin,
-                usia: user.usia,
+            const token = getToken();
+            const userId = id;
+
+            if (!userId) {
+                console.error('User ID is undefined.');
+                console.info('User ID is undefined.');
+                return;
+            }
+
+            let url = `http://localhost:3006/api/nasabah/${userId}`;
+
+            const updateUser = { ...user };
+            if (!updateUser.password) {
+                delete updateUser.password;
+            }
+
+            console.log("Payload yang dikirim: ", updateUser);
+            console.info("Payload yang dikirim: ", updateUser);
+
+            const response = await axios.put(url, updateUser, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             });
 
+            console.log('Response dari server:', response);
+            console.info('Response dari server:', response);
+
             if (response.data) {
-                localStorage.setItem('username', response.data.username);
-                localStorage.setItem('email', response.data.email);
-                localStorage.setItem('no_telp', response.data.no_telp);
-                localStorage.setItem('nik', response.data.nik);
-                localStorage.setItem('alamat', response.data.alamat);
-                localStorage.setItem('jenis_kelamin', response.data.jenis_kelamin);
-                localStorage.setItem('usia', response.data.usia);
+                if (role === 'Nasabah') {
+                    setUserInfo(response.data);
+                }
 
                 toast.success('Data berhasil diperbarui!');
                 router.push('/dashboard');
             }
         } catch (error) {
-            console.error('Update error:', error);
+            console.error('Gagal memperbarui data:', error);
+            console.info('Gagal memperbarui data:', error);
             toast.error('Gagal memperbarui data.');
         }
     };
@@ -69,127 +130,106 @@ export default function EditNasabah() {
     };
 
     return (
-        <div className="min-h-screen flex bg-gray-100">
+          <div className="min-h-screen flex flex-col md:flex-row bg-gray-100">
             <Toaster position="top-center" reverseOrder={false} />
 
-            {/* Sidebar */}
-            <div className="w-64 bg-blue-800 p-6 flex flex-col items-center">
+            <div className="w-full md:w-64 bg-blue-800 p-6 flex flex-col items-center">
                 <h2 className="text-xl font-bold text-white text-center">Bank Customer BRI</h2>
+                <p className="text-white text-center mt-2">{currentTime.toLocaleTimeString()}</p>
                 <hr className="my-4 w-full border-t-2 border-gray-200" />
-                <div className="w-full">
-                    <ul className="mt-4 space-y-2 w-full">
-                        <li
-                            className="bg-gray-300 p-2 rounded-lg text-center font-semibold border border-gray-400"
-                        >
-                            Data Nasabah
-                        </li>
-                    </ul>
-                </div>
-                <div className="mt-auto w-full">
-                    <button
-                        onClick={() => router.push('/login')}
-                        className="w-full py-2 mt-4 font-bold text-white bg-red-500 rounded-md hover:bg-red-600 transition-transform duration-200 transform hover:scale-105"
-                    >
-                        Logout
-                    </button>
-                </div>
             </div>
 
-            {/* Main Content */}
             <div className="flex-grow p-6">
                 <h1 className="text-2xl font-bold mb-4">Edit Data Nasabah</h1>
                 <div className="mt-4">
-                    <table className="table-auto border-collapse border border-gray-400 w-full">
-                        <tbody>
-                            <tr>
-                                <td className="border border-gray-300 px-4 py-2 font-semibold">Username:</td>
-                                <td className="border border-gray-300 px-4 py-2">
-                                    <input
-                                        type="text"
-                                        name="username"
-                                        value={user.username}
-                                        onChange={handleChange}
-                                        className="w-full p-2 border border-gray-300 rounded"
-                                    />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="border border-gray-300 px-4 py-2 font-semibold">Email:</td>
-                                <td className="border border-gray-300 px-4 py-2">
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={user.email}
-                                        onChange={handleChange}
-                                        className="w-full p-2 border border-gray-300 rounded"
-                                    />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="border border-gray-300 px-4 py-2 font-semibold">No. Telepon:</td>
-                                <td className="border border-gray-300 px-4 py-2">
-                                    <input
-                                        type="text"
-                                        name="no_telp"
-                                        value={user.no_telp}
-                                        onChange={handleChange}
-                                        className="w-full p-2 border border-gray-300 rounded"
-                                    />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="border border-gray-300 px-4 py-2 font-semibold">NIK:</td>
-                                <td className="border border-gray-300 px-4 py-2">
-                                    <input
-                                        type="text"
-                                        name="nik"
-                                        value={user.nik}
-                                        onChange={handleChange}
-                                        className="w-full p-2 border border-gray-300 rounded"
-                                    />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="border border-gray-300 px-4 py-2 font-semibold">Alamat:</td>
-                                <td className="border border-gray-300 px-4 py-2">
-                                    <input
-                                        type="text"
-                                        name="alamat"
-                                        value={user.alamat}
-                                        onChange={handleChange}
-                                        className="w-full p-2 border border-gray-300 rounded"
-                                    />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="border border-gray-300 px-4 py-2 font-semibold">Jenis Kelamin:</td>
-                                <td className="border border-gray-300 px-4 py-2">
-                                    <select
-                                        name="jenis_kelamin"
-                                        value={user.jenis_kelamin}
-                                        onChange={handleChange}
-                                        className="w-full p-2 border border-gray-300 rounded"
-                                    >
-                                        <option value="Laki-laki">Laki-laki</option>
-                                        <option value="Perempuan">Perempuan</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="border border-gray-300 px-4 py-2 font-semibold">Usia:</td>
-                                <td className="border border-gray-300 px-4 py-2">
-                                    <input
-                                        type="number"
-                                        name="usia"
-                                        value={user.usia}
-                                        onChange={handleChange}
-                                        className="w-full p-2 border border-gray-300 rounded"
-                                    />
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div className="flex justify-end space-x-4 mt-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-8">
+                        <div className="col-span-1">
+                            <label className="font-semibold">Username:</label>
+                            <input
+                                type="text"
+                                name="username"
+                                value={user.username}
+                                onChange={handleChange}
+                                className="w-full p-2 border border-gray-300 rounded mt-1"
+                            />
+                        </div>
+                        <div className="col-span-1">
+                            <label className="font-semibold">Email:</label>
+                            <input
+                                type="email"
+                                name="email"
+                                value={user.email}
+                                onChange={handleChange}
+                                className="w-full p-2 border border-gray-300 rounded mt-1"
+                            />
+                        </div>
+                        <div className="col-span-1">
+                            <label className="font-semibold">No. Telepon:</label>
+                            <input
+                                type="text"
+                                name="no_telp"
+                                value={user.no_telp}
+                                onChange={handleChange}
+                                className="w-full p-2 border border-gray-300 rounded mt-1"
+                            />
+                        </div>
+                        <div className="col-span-1">
+                            <label className="font-semibold">NIK:</label>
+                            <input
+                                type="text"
+                                name="nik"
+                                value={user.nik}
+                                onChange={handleChange}
+                                className="w-full p-2 border border-gray-300 rounded mt-1"
+                            />
+                        </div>
+                        <div className="col-span-1">
+                            <label className="font-semibold">Alamat:</label>
+                            <input
+                                type="text"
+                                name="alamat"
+                                value={user.alamat}
+                                onChange={handleChange}
+                                className="w-full p-2 border border-gray-300 rounded mt-1"
+                            />
+                        </div>
+                        <div className="col-span-1">
+                            <label className="font-semibold">Jenis Kelamin:</label>
+                            <select
+                                name="jenis_kelamin"
+                                value={user.jenis_kelamin}
+                                onChange={handleChange}
+                                className="w-full p-2 border border-gray-300 rounded mt-1"
+                            >
+                                <option value="Laki-laki">Laki-laki</option>
+                                <option value="Perempuan">Perempuan</option>
+                            </select>
+                        </div>
+                        <div className="col-span-1">
+                            <label className="font-semibold">Usia:</label>
+                            <input
+                                type="number"
+                                name="usia"
+                                value={user.usia}
+                                onChange={handleChange}
+                                className="w-full p-2 border border-gray-300 rounded mt-1"
+                            />
+                        </div>
+                        {role === 'Admin' && (
+                            <div className="col-span-1">
+                                <label className="font-semibold">Password:</label>
+                                <input
+                                    type="password"
+                                    name="password"
+                                    value={user.password}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 rounded mt-1"
+                                    placeholder="Kosongkan jika tidak ingin mengubah"
+                                />
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex justify-end space-x-4 mt-6">
                         <button
                             onClick={handleBack}
                             className="bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-500 transition-transform duration-200 transform hover:scale-105"
