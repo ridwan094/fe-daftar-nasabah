@@ -4,12 +4,16 @@ import axios from '../utils/axios';
 import { toast, Toaster } from 'react-hot-toast';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { setToken, setUserId, setUserInfo, setRole } from '../utils/auth';
+import TextInput from '../components/TextInput';
+import Button from '../components/Button';
+import Logo from '../components/Logo';
+import FormWrapper from '../components/FormWrapper';
+import ForgotPasswordLink from '../components/ForgotPasswordLink';
 
 export default function Login() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState('');
     const router = useRouter();
 
     const togglePasswordVisibility = () => {
@@ -45,7 +49,7 @@ export default function Login() {
     return (
         <div className="py-16">
             <Toaster position="top-center" reverseOrder={false} />
-            <div className="flex bg-white rounded-lg shadow-lg overflow-hidden mx-auto max-w-sm lg:max-w-4xl">
+            <FormWrapper className="bg-white shadow-lg">
                 <div
                     className="hidden lg:block lg:w-1/2 bg-cover"
                     style={{
@@ -55,49 +59,36 @@ export default function Login() {
                     }}
                 ></div>
                 <div className="w-full p-8 lg:w-1/2">
-                    <img
-                        src="https://jasalogocepat.com/wp-content/uploads/2023/09/logo-bri-png-transparan-jasalogocepat-01.png"
-                        alt="Logo BRI"
-                        className='h-12 w-auto justify-center mx-auto'
-                    />
+                    <Logo className="mb-4" />
                     <p className="text-xl text-gray-600 text-center">Sign in to your account</p>
                     <form onSubmit={handleLogin}>
-                        <div className="mt-4">
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Username</label>
-                            <input
-                                className="bg-gray-200 text-gray-700 focus:outline-none focus:shadow-outline border border-gray-300 rounded py-2 px-4 block w-full appearance-none"
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                required
-                                style={{ borderWidth: '2px' }}
-                            />
-                        </div>
-                        <div className="mt-4 relative"> {/* Tambahkan relative untuk posisikan icon */}
-                            <div className="flex justify-between">
-                                <label className="block text-gray-700 text-sm font-bold mb-2">Password</label>
-                                <a href="/forgot-password" className="text-xs text-gray-500">Forgot password?</a>
-                            </div>
-                            <input
-                                className="bg-gray-200 text-gray-700 focus:outline-none focus:shadow-outline border border-gray-300 rounded py-2 px-4 block w-full appearance-none"
-                                type={showPassword ? 'text' : 'password'} // Tipe input berubah berdasarkan state
+                        <TextInput
+                            label="Username"
+                            type="text"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            className="mb-4"
+                        />
+                        <div className="relative">
+                            <TextInput
+                                label="Password"
+                                type={showPassword ? 'text' : 'password'}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                required
-                                style={{ borderWidth: '2px' }}
+                                showIcon={true}
+                                icon={showPassword ? <FaEyeSlash /> : <FaEye />}
+                                onIconClick={togglePasswordVisibility}
                             />
-                            <span onClick={togglePasswordVisibility} className="absolute right-3 top-10 cursor-pointer">
-                                {showPassword ? <FaEyeSlash /> : <FaEye />} {/* Icon mata berubah */}
-                            </span>
+                            <div className="text-xs text-gray-500 mt-2">
+                                <ForgotPasswordLink />
+                            </div>
                         </div>
-                        {error && <p className="mt-4 text-red-600">{error}</p>}
                         <div className="mt-8">
-                            <button
+                            <Button
                                 type="submit"
-                                className="bg-blue-500 text-white font-bold py-2 px-4 w-full rounded hover:bg-blue-600"
-                            >
-                                Sign in
-                            </button>
+                                label="Sign in"
+                                className="bg-blue-500 text-white hover:bg-blue-600"
+                            />
                         </div>
                     </form>
                     <div className="mt-4 flex items-center justify-between">
@@ -109,7 +100,7 @@ export default function Login() {
                         <span className="border-b w-1/5 md:w-1/4"></span>
                     </div>
                 </div>
-            </div>
+            </FormWrapper>
         </div>
     );
 }
